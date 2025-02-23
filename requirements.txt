@@ -1,0 +1,20 @@
+[
+    {
+        "user_id": "12345",
+        "disease": "Heart Disease",
+        "top_5_features": ["High blood pressure", "High cholesterol", "Smoking", "Diabetes", "Obesity"],
+        "age": 55,
+        "gender": "Male",
+        "lifestyle": "Sedentary",
+        "metadata": "Relevant health history and factors."
+    },
+    {
+        "user_id": "67890",
+        "disease": "Diabetes",
+        "top_5_features": {"High blood sugar", "Insulin resistance", "Obesity", "Family history", "Sedentary lifestyle"],
+        "age": 45,
+        "gender": "Female",
+        "lifestyle": "Moderate activity",
+        "metadata": "Additional relevant factors."
+    }
+]
