@@ -6,7 +6,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 
 # Load API Key from environment variable
-GOOGLE_API_KEY = "AIzaSyAANafvQOnGIZvzYsl-ZnXaBGIxi6qB_fg"
+GOOGLE_API_KEY = "API-key"
 if not GOOGLE_API_KEY:
     raise ValueError("⚠️ GOOGLE_API_KEY is missing. Set it in your environment variables.")
 
