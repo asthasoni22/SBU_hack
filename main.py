@@ -1,72 +1,60 @@
-from langchain.vectorstores import FAISS
-from langchain_google_genai import ChatGoogleGenerativeAI
 import os
 import faiss
-import pickle
 import json
-from langchain.schema import HumanMessage
+from langchain.vectorstores import FAISS
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 
-# Set up API key
-os.environ["GOOGLE_API_KEY"] = ""
+# Load API Key from environment variable
+GOOGLE_API_KEY = "API"
+if not GOOGLE_API_KEY:
+    raise ValueError("⚠️ GOOGLE_API_KEY is missing. Set it in your environment variables.")
 
 # Initialize LLM
-llm = ChatGoogleGenerativeAI(model="gemini-pro")
+llm = ChatGoogleGenerativeAI(model="gemini-pro", google_api_key=GOOGLE_API_KEY)
 
-
+# Paths
 FAISS_INDEX_PATH = "data/faiss_index/index.faiss"
+EXAMPLE_DATA_PATH = "data/faiss_index/example_data.json"
+
+
+# Load FAISS Index
 def load_faiss_index(index_path=FAISS_INDEX_PATH):
-    """Load FAISS index from a pickle file."""
     if not os.path.exists(index_path):
-        raise FileNotFoundError(f"FAISS index file not found: {index_path}")
-    
-    if os.path.isdir(index_path):  
-        raise IsADirectoryError(f"Expected a file but found a directory: {index_path}")
+        raise FileNotFoundError(f"⚠️ FAISS index file not found: {index_path}")
 
     try:
-        with open(index_path, "rb") as f:
-            faiss_index = pickle.load(f)
-            
-            # ✅ Ensure it's a FAISS object
-            if not isinstance(faiss_index, FAISS):
-                raise TypeError("Loaded object is not a valid FAISS vector store")
-            
-            return faiss_index
+        faiss_index = faiss.read_index(index_path)
+        if not isinstance(faiss_index, faiss.Index):
+            raise ValueError("⚠️ Loaded FAISS object is not valid.")
+        return faiss_index
     except Exception as e:
         print(f"⚠️ Error loading FAISS index: {e}")
         return None
 
 
-
-# Retrieve user data from FAISS
-def retrieve_user_data(vector_db, user_id, fallback_data_path="data/faiss_index/example_data.json"):
-    # If FAISS is available, try retrieving the user data
+# Retrieve user data
+def retrieve_user_data(vector_db, user_query, fallback_data_path=EXAMPLE_DATA_PATH):
     if vector_db:
         try:
-            results = vector_db.similarity_search(user_id, k=1)  # Fetch closest match
-            if results:
-                metadata_data = results[0].metadata["data"]
+            user_vector = [0] * vector_db.d  # Dummy vector for searching
+            distances, indices = vector_db.search(user_vector, k=1)
 
-                if isinstance(metadata_data, str):
-                    return json.loads(metadata_data)  # Convert JSON string to dict
-                elif isinstance(metadata_data, dict):
-                    return metadata_data  # Already a dictionary
+            if indices[0][0] != -1:
+                with open(fallback_data_path, "r", encoding="utf-8") as f:
+                    return json.load(f)  # Load example data
         except AttributeError:
-            print("⚠️ FAISS object is not properly initialized. Using example data.")
+            print("⚠️ FAISS object not properly initialized. Using fallback data.")
 
-    # If FAISS retrieval fails, load example data
-    print("⚠️ No match found in FAISS. Loading fallback example data.")
     with open(fallback_data_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
-
-# Generate explanation for disease prediction
+# Generate medical explanation
 def generate_medical_explanation(llm, user_data):
     features = user_data.get("top_5_features", {})
     disease = user_data.get("disease", "the condition")
 
-    # Categorize features based on positive or negative LIME influence
     positive_features = []
     negative_features = []
 
@@ -77,7 +65,6 @@ def generate_medical_explanation(llm, user_data):
         else:
             negative_features.append(explanation)
 
-    # Construct the prompt
     prompt = f"""
     The user has been diagnosed with {disease}. Here are the factors influencing this prediction:
 
@@ -89,40 +76,39 @@ def generate_medical_explanation(llm, user_data):
 
     Explain why these factors impact {disease} in simple terms.
     """
+    print(prompt)
+    response = llm.invoke(prompt)  # ✅ FIXED: Passing string instead of HumanMessage
+    return response
 
-    response = response = llm.invoke(prompt)  # ✅ Pass the string directly
-  # FIXED: Correct invocation
-    return response.content
 
-
-# General chat response
+# General chatbot response
 def general_chat(llm, user_input):
-    response = llm.invoke(HumanMessage(content=user_input))  # FIXED: Correct invocation
-    return response.content
+    response = llm.invoke(user_input)  # ✅ FIXED: Passing string instead of HumanMessage
+    return response
 
 
+# Main function
 def main(user_query, use_fallback=False):
-    vector_db = load_faiss_index()  # Load FAISS index
-    
+    vector_db = load_faiss_index()
+
     try:
         user_data = retrieve_user_data(vector_db, user_query)
     except Exception as e:
         print(f"⚠️ Error retrieving data from FAISS: {e}")
         user_data = None
 
-    # If no data found, use fallback example data
     if use_fallback or user_data is None:
-        print("⚠️ No match found in FAISS. Loading fallback example data.")
-        with open("data/faiss_index/example_data.json", "r") as f:
-            user_data = json.load(f)  # Load example data
-    
+        print("⚠️ No match found in FAISS. Using fallback data.")
+        with open(EXAMPLE_DATA_PATH, "r") as f:
+            user_data = json.load(f)
+
     if "top_5_features" in user_data:
         return generate_medical_explanation(llm, user_data)
     else:
         return general_chat(llm, user_query)
 
 
-
+# Run the script
 if __name__ == "__main__":
     user_query = "12345"  # Use user_id from example_data.json
-    print(main(user_query, use_fallback=True))  # Force fallback to example data
+    print(main(user_query, use_fallback=True))
