@@ -6,7 +6,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 
 # Load API Key from environment variable
-GOOGLE_API_KEY = "API"
+GOOGLE_API_KEY = "AIzaSyAANafvQOnGIZvzYsl-ZnXaBGIxi6qB_fg"
 if not GOOGLE_API_KEY:
     raise ValueError("⚠️ GOOGLE_API_KEY is missing. Set it in your environment variables.")
 
@@ -78,7 +78,9 @@ def generate_medical_explanation(llm, user_data):
     """
     print(prompt)
     response = llm.invoke(prompt)  # ✅ FIXED: Passing string instead of HumanMessage
-    return response
+    
+    return response.content
+
 
 
 # General chatbot response
