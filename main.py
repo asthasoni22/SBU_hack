@@ -8,7 +8,7 @@ from langchain.schema import HumanMessage
 
 
 # Set up API key
-os.environ["GOOGLE_API_KEY"] = "AIzaSyDNjC9gL9JKfnXuoo41AlmHTffrQYPO-0Y"
+os.environ["GOOGLE_API_KEY"] = ""
 
 # Initialize LLM
 llm = ChatGoogleGenerativeAI(model="gemini-pro")

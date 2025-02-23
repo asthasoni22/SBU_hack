@@ -5,7 +5,7 @@ import numpy as np
 import faiss
 
 # Set up Google API key
-os.environ["GOOGLE_API_KEY"] = "AIzaSyDNjC9gL9JKfnXuoo41AlmHTffrQYPO-0Y"
+os.environ["GOOGLE_API_KEY"] = ""
 
 # Sample data
 sample_data = [
